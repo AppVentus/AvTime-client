@@ -237,9 +237,8 @@ def get_user_agent(plugin):
     return user_agent
 
 
-def send_action(project=None, branch=None, stats=None, key=None, targetFile=None,
+def send_action(project=None, branch=None, stats=None, url=None, key=None, targetFile=None,
         timestamp=None, isWrite=None, plugin=None, offline=None, **kwargs):
-    url = 'https://wakatime.com/api/v1/actions'
     log.debug('Sending action to api at %s' % url)
     data = {
         'time': timestamp,
@@ -357,6 +356,7 @@ def main(argv=None):
                 project=project_name,
                 branch=branch,
                 stats=stats,
+                url="http://avtime.appventus.com/api/v1/actions",
                 **vars(args)
             ):
             queue = Queue()
@@ -365,7 +365,25 @@ def main(argv=None):
                 if action is None:
                     break
                 if not send_action(project=action['project'], targetFile=action['file'], timestamp=action['time'],
-                        branch=action['branch'], stats={'language': action['language'], 'lines': action['lines']},
+                        url="http://avtime.appventus.com/api/v1/actions", branch=action['branch'], stats={'language': action['language'], 'lines': action['lines']},
+                        key=args.key, isWrite=action['is_write'], plugin=action['plugin'], offline=args.offline):
+                    break
+                break
+
+        if send_action(
+                project=project_name,
+                branch=branch,
+                stats=stats,
+                url="https://wakatime.com/api/v1/actions",
+                **vars(args)
+            ):
+            queue = Queue()
+            while True:
+                action = queue.pop()
+                if action is None:
+                    break
+                if not send_action(project=action['project'], targetFile=action['file'], timestamp=action['time'],
+                        url="https://wakatime.com/api/v1/actions", branch=action['branch'], stats={'language': action['language'], 'lines': action['lines']},
                         key=args.key, isWrite=action['is_write'], plugin=action['plugin'], offline=args.offline):
                     break
             return 0 # success
